@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String?  @unique
+  image         String?
+  password      String?   // only used for email login
+  createdAt     DateTime @default(now())
+
+  meetings      Meeting[] @relation("HostedMeetings")
+  participants  Participant[]
+  meetingParticipants MeetingParticipant[]
+}
+
+model Meeting {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  startsAt      DateTime
+  endsAt        DateTime?
+  hostId        String
+  streamCallId  String?   // connect with GetStream
+
+  host          User      @relation("HostedMeetings", fields: [hostId], references: [id])
+
+  participants  Participant[]
+  meetingParticipants MeetingParticipant[]
+
+  createdAt     DateTime @default(now())
+}
+
+model Participant {
+  id         String   @id @default(cuid())
+  userId     String
+  meetingId  String
+
+  user       User    @relation(fields: [userId], references: [id])
+  meeting    Meeting @relation(fields: [meetingId], references: [id])
+
+  joinedAt   DateTime @default(now())
+}
+
+model MeetingParticipant {
+  id        String   @id @default(cuid())
+  userId    String
+  meetingId String
+
+  user      User     @relation(fields: [userId], references: [id])
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, meetingId]) // user can’t join twice
+}
