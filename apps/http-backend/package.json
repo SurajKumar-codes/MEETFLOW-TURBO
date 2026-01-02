@@ -19,6 +19,7 @@
   "dependencies": {
     "@stream-io/node-sdk": "^0.7.32",
     "@stream-io/video-react-sdk": "^1.30.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

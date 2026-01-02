@@ -17,7 +17,7 @@ router.post("/create", requireUser, async (req, res) => {
       return res.status(400).json({ message: "Missing Field" });
     }
 
-    // 1️⃣ create DB meeting
+    // 1 create DB meeting
     const meeting = await prisma.meeting.create({
       data: {
         title,
@@ -28,7 +28,7 @@ router.post("/create", requireUser, async (req, res) => {
 
     const callId = meeting.id;
 
-    // 2️⃣ create Stream call
+    // 2️ create Stream call
     const call = streamServer.video.call("default", callId);
 
     await call.getOrCreate({
@@ -38,7 +38,7 @@ router.post("/create", requireUser, async (req, res) => {
     });
 
 
-    // 3️⃣ set host as member
+    // 3️ set host as member
     await call.updateCallMembers({
       update_members: [{ user_id: hostId, role: "host" }],
     });
@@ -53,7 +53,7 @@ router.post("/create", requireUser, async (req, res) => {
       where: { id: meeting.id },
     });
 
-    // 4️⃣ add host to participants table
+    // 4️ add host to participants table
     await prisma.meetingParticipant.create({
       data: { userId: hostId, meetingId: meeting.id },
     });
@@ -95,7 +95,7 @@ router.post("/join",requireUser, async (req, res) => {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // 1️⃣ check meeting exists
+    // 1️ check meeting exists
     const meeting = await prisma.meeting.findUnique({
       where: { id: meetingId },
     });
@@ -104,7 +104,7 @@ router.post("/join",requireUser, async (req, res) => {
       return res.status(404).json({ message: "Meeting not found" });
     }
 
-    // 2️⃣ ensure participant exists (or invite automatically)
+    // 2️ ensure participant exists (or invite automatically)
     let participant = await prisma.meetingParticipant.findFirst({
       where: { userId, meetingId },
     });
@@ -115,7 +115,7 @@ router.post("/join",requireUser, async (req, res) => {
       });
     }
 
-    // 3️⃣ generate Stream token for this user
+    // 3️ generate Stream token for this user
     const token = streamServer.createToken(userId);
 
     res.json({
