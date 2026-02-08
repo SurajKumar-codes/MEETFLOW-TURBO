@@ -71,17 +71,17 @@ const Signup = () => {
             {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
           </label>
 
-          <button className="h-10 w-full rounded-2xl bg-primary text-white mt-2">
+          <button className="h-10 w-full rounded-2xl bg-primary text-white mt-2 cursor-pointer">
             Login
           </button>
 
           <p className="text-xs text-center text-gray-400">Or login with</p>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button className="h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm">
+            <button className="h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm cursor-pointer">
               Google
             </button>
-            <button className="h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm">
+            <button className="h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm cursor-pointer">
               LinkedIn
             </button>
           </div>

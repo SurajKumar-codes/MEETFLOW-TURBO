@@ -92,15 +92,15 @@ const Signup = () => {
             {errors.password && <p className='text-red-500 text-sm'>{errors.repeatPassword}</p>}
           </label>
 
-          <button type='submit' className='h-10 w-full rounded-2xl bg-primary text-white mt-3'>SignUp</button>
+          <button type='submit' className='h-10 w-full rounded-2xl bg-primary text-white mt-3 cursor-pointer'>SignUp</button>
 
           <div className='w-full'>
             <p className='text-[12px] text-center text-gray-400'>Or Sign up with</p>
           </div>
 
           <div className='flex flex-col sm:flex-row gap-3 w-full'>
-            <button className='h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm'>Google</button>
-            <button className='h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm'>Linkdin</button>
+            <button className='h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm cursor-pointer'>Google</button>
+            <button className='h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm cursor-pointer'>Linkdin</button>
           </div>
           <div className='w-full text-[12px]'>
             <p className='text-center text-gray-400'>Already have an account? <b className='cursor-pointer text-blue-700'><Link href='/login'>Login</Link></b></p>
