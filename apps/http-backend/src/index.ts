@@ -5,10 +5,30 @@ import cors from "cors"
 
 const app = express(); 
 
+const allowedOrigins = (process.env.CLIENT_ORIGINS || "http://localhost:3000,http://localhost:3002")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const isLocalhostOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      const isConfiguredOrigin = allowedOrigins.includes(origin);
+
+      if (isLocalhostOrigin || isConfiguredOrigin) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin denied"));
+    },
     credentials: true,
   })
 );

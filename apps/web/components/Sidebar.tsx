@@ -25,6 +25,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const isProfileActive = pathname === "/profile"
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -95,7 +96,11 @@ export default function Sidebar() {
           <div className="border-t border-zinc-800 mt-4 pt-4">
             <Link
               href="/profile"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:bg-zinc-800 hover:text-white transition"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+                isProfileActive
+                  ? "bg-blue-600 text-white"
+                  : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              }`}
             >
               <User size={20} />
               <span className="font-medium">Profile</span>
@@ -141,7 +146,11 @@ export default function Sidebar() {
         {/* Bottom section - User Profile */}
         <Link
           href="/profile"
-          className="w-11 h-11 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-zinc-800 hover:text-white"
+          className={`w-11 h-11 flex items-center justify-center rounded-xl transition ${
+            isProfileActive
+              ? "bg-blue-600 text-white"
+              : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+          }`}
         >
           <User size={20} />
         </Link>

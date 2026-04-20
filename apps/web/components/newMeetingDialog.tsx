@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,14 +12,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Video, X, Copy, Check } from "lucide-react";
+import { Video, Copy, Check } from "lucide-react";
+import { apiRequest, Meeting } from "@/lib/api";
 
 interface NewMeetingDialogProps {
   trigger?: React.ReactNode;
+  onCreated?: (meeting: Meeting) => void;
 }
 
-export function NewMeetingDialog({ trigger }: NewMeetingDialogProps) {
+export function NewMeetingDialog({ trigger, onCreated }: NewMeetingDialogProps) {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -40,9 +46,41 @@ export function NewMeetingDialog({ trigger }: NewMeetingDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Meeting Data:", formData);
-    // TODO: Save meeting to database
-    setOpen(false);
+
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) {
+      setError("Please sign in to create a meeting.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    const startsAt = new Date(`${formData.date}T${formData.startTime}:00`).toISOString();
+    const endsAt = new Date(`${formData.date}T${formData.endTime}:00`).toISOString();
+
+    apiRequest<Meeting>("/meetings/create", userId, {
+      method: "POST",
+      body: JSON.stringify({
+        title: formData.title,
+        startsAt,
+        endsAt,
+        passcode: formData.passcode,
+      }),
+    })
+      .then((meeting) => {
+        onCreated?.(meeting);
+        setOpen(false);
+      })
+      .catch((err: Error) => {
+        const message = err.message || "Failed to create meeting.";
+        if (message.toLowerCase().includes("failed to fetch")) {
+          setError("Cannot reach API server (http://localhost:3001). Please start http-backend.");
+          return;
+        }
+        setError(message);
+      })
+      .finally(() => setSubmitting(false));
   };
 
   return (
@@ -147,10 +185,12 @@ export function NewMeetingDialog({ trigger }: NewMeetingDialogProps) {
           {/* Submit Button */}
           <Button
             type="submit"
+            disabled={submitting || !formData.title.trim()}
             className="w-full bg-primary hover:bg-primary/90 text-white font-medium"
           >
-            Create Meeting
+            {submitting ? "Creating..." : "Create Meeting"}
           </Button>
+          {error ? <p className="text-sm text-red-400">{error}</p> : null}
         </form>
       </DialogContent>
     </Dialog>

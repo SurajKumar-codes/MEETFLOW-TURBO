@@ -25,6 +25,7 @@ model User {
   meetings      Meeting[] @relation("HostedMeetings")
   participants  Participant[]
   meetingParticipants MeetingParticipant[]
+  messages      MeetingMessage[]
 
   accounts  Account[]
   sessions  Session[]
@@ -34,6 +35,7 @@ model Meeting {
   id            String   @id @default(cuid())
   title         String
   description   String?
+  passcode      String?
   startsAt      DateTime
   endsAt        DateTime?
   hostId        String
@@ -43,8 +45,22 @@ model Meeting {
 
   participants  Participant[]
   meetingParticipants MeetingParticipant[]
+  messages      MeetingMessage[]
 
   createdAt     DateTime @default(now())
+}
+
+model MeetingMessage {
+  id        String   @id @default(cuid())
+  meetingId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([meetingId, createdAt])
 }
 
 model Participant {

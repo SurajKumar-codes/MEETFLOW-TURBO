@@ -29,10 +29,13 @@ export function JoinMeetingDialog({ trigger }: JoinMeetingDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Join Meeting Data:", formData);
-    // Navigate to meeting room
-    if (formData.meetingId) {
-      router.push(`/meeting/${formData.meetingId}`);
+
+    const meetingId = formData.meetingId.trim();
+    if (meetingId) {
+      const query = formData.passcode.trim()
+        ? `?passcode=${encodeURIComponent(formData.passcode.trim())}`
+        : "";
+      router.push(`/meeting/${meetingId}${query}`);
       setOpen(false);
     }
   };

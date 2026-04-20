@@ -1,101 +1,99 @@
-'use client'
-import Image from 'next/image'
-import React, { ChangeEvent, FormEvent, useState } from 'react'
-import Link from 'next/link'
+"use client";
 
-const Signup = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
-  const [errors, setErrors] = useState({
-    email: '',
-    password: '',
-  })
+export default function LoginPage() {
+  const router = useRouter();
+  const [callbackUrl, setCallbackUrl] = useState("/");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("callbackUrl") || "/";
+    setCallbackUrl(value);
+  }, []);
 
-    let newErrors = { email: '', password: '' }
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
 
-    if (!formData.email) newErrors.email = '*Email is required'
-    if (!formData.password) newErrors.password = '*Password is required'
+    const response = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-    setErrors(newErrors)
-  }
+    setLoading(false);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    setErrors({ ...errors, [e.target.name]: '' })
-  }
+    if (response?.error) {
+      setError("Invalid email or password");
+      return;
+    }
+
+    router.push(callbackUrl);
+    router.refresh();
+  };
 
   return (
     <div className="min-h-screen w-full flex justify-center items-center px-4">
-      <div className="w-full max-w-md sm:max-w-lg bg-black rounded-2xl p-6 sm:p-10">
+      <div className="w-full max-w-md bg-black rounded-2xl p-6 sm:p-10">
+        <h1 className="text-3xl font-bold text-white text-center">Welcome Back</h1>
+        <p className="text-center text-gray-400 text-sm mt-2">Sign in to your MeetFlow account</p>
 
-        {/* Header */}
-        <div className="flex flex-col items-center mb-6">
-          <Image src="/ideora_logo.png" alt="logo" width={50} height={50} />
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mt-4">
-            Ready to Get Started?
-          </h1>
-          <p className="text-center text-gray-400 text-sm max-w-xs mt-2">
-            Join us and unlock full potential of our online meeting dashboard
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
+        <form onSubmit={handleLogin} className="flex flex-col gap-4 mt-8">
           <label className="flex flex-col gap-1">
             <span className="text-white text-sm">Email</span>
             <input
-              className="h-10 w-full rounded-2xl px-3 bg-zinc-900 text-sm sm:text-base"
-              name="email"
+              className="h-10 w-full rounded-xl px-3 bg-zinc-900 text-sm"
+              type="email"
               placeholder="Enter your email"
-              onChange={handleChange}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
             />
-            {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
           </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-white text-sm">Password</span>
             <input
+              className="h-10 w-full rounded-xl px-3 bg-zinc-900 text-sm"
               type="password"
-              className="h-10 w-full rounded-2xl px-3 bg-zinc-900 text-sm sm:text-base"
-              name="password"
               placeholder="Enter your password"
-              onChange={handleChange}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
             />
-            {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
           </label>
 
-          <button className="h-10 w-full rounded-2xl bg-primary text-white mt-2 cursor-pointer">
-            Login
+          {error ? <p className="text-red-500 text-sm">{error}</p> : null}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="h-10 w-full rounded-xl bg-primary text-white mt-2 disabled:opacity-60"
+          >
+            {loading ? "Signing in..." : "Sign In"}
           </button>
 
-          <p className="text-xs text-center text-gray-400">Or login with</p>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button className="h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm cursor-pointer">
-              Google
-            </button>
-            <button className="h-10 w-full sm:w-1/2 rounded-2xl bg-zinc-900 text-sm cursor-pointer">
-              LinkedIn
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => signIn("google", { callbackUrl: "/" })}
+            className="h-10 w-full rounded-xl bg-zinc-900 text-sm text-white"
+          >
+            Continue with Google
+          </button>
 
           <p className="text-xs text-center text-gray-400 mt-2">
-            Create an account?{' '}
-            <Link href="/Signup" className="text-blue-600 font-semibold">
-              Signup
-            </Link>
+            Don&apos;t have an account? <Link href="/Signup" className="text-blue-500">Sign up</Link>
           </p>
         </form>
       </div>
     </div>
-  )
+  );
 }
-
-export default Signup
