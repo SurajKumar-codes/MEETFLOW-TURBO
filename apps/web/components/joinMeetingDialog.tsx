@@ -23,21 +23,25 @@ export function JoinMeetingDialog({ trigger }: JoinMeetingDialogProps) {
   const [formData, setFormData] = useState({
     meetingId: "",
     passcode: "",
-    displayName: "",
   });
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const meetingId = formData.meetingId.trim();
-    if (meetingId) {
-      const query = formData.passcode.trim()
-        ? `?passcode=${encodeURIComponent(formData.passcode.trim())}`
-        : "";
-      router.push(`/meeting/${meetingId}${query}`);
-      setOpen(false);
-    }
+    // Accept either a raw meeting ID or a pasted meeting link.
+    const raw = formData.meetingId.trim();
+    if (!raw) return;
+
+    const meetingId = raw.includes("/meeting/")
+      ? (raw.split("/meeting/")[1]?.split(/[?#/]/)[0] ?? raw)
+      : raw;
+
+    const query = formData.passcode.trim()
+      ? `?passcode=${encodeURIComponent(formData.passcode.trim())}`
+      : "";
+    router.push(`/meeting/${meetingId}${query}`);
+    setOpen(false);
   };
 
   return (
@@ -86,20 +90,6 @@ export function JoinMeetingDialog({ trigger }: JoinMeetingDialogProps) {
               placeholder="Enter passcode"
               value={formData.passcode}
               onChange={(e) => setFormData({ ...formData, passcode: e.target.value })}
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-primary"
-            />
-          </div>
-
-          {/* Display Name */}
-          <div className="space-y-2">
-            <Label htmlFor="displayName" className="text-zinc-400 text-sm">
-              Your Display Name
-            </Label>
-            <Input
-              id="displayName"
-              placeholder="How you'll appear in the meeting"
-              value={formData.displayName}
-              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
               className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-primary"
             />
           </div>

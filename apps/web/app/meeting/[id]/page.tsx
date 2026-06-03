@@ -1,14 +1,14 @@
-
-
 import MeetingClient from "./MeetingClient";
 
 export default async function Page({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { passcode?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ passcode?: string }>;
 }) {
-  const {id} = await params;
-  return <MeetingClient meetingId={id} passcode={searchParams?.passcode} />;
+  const { id } = await params;
+  const { passcode } = await searchParams;
+
+  return <MeetingClient meetingId={id} passcode={passcode} />;
 }

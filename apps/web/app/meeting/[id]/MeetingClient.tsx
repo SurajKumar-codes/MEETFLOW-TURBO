@@ -1,17 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { StreamProvider } from "@/lib/streamClient";
 import {
-  StreamCall,
-  SpeakerLayout,
-  CallControls,
-  StreamTheme,
-  useStreamVideoClient,
   Call,
+  CallingState,
+  StreamCall,
+  StreamTheme,
+  useCallStateHooks,
+  useStreamVideoClient,
 } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
+import { Loader2, Lock, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Lobby } from "@/components/meeting/Lobby";
+import { MeetingRoom } from "@/components/meeting/MeetingRoom";
+
+type JoinState = {
+  token: string;
+  callId: string;
+  userId: string;
+  userName: string;
+  userImage?: string;
+  meetingTitle: string;
+};
 
 export default function MeetingClient({
   meetingId,
@@ -20,146 +34,301 @@ export default function MeetingClient({
   meetingId: string;
   passcode?: string;
 }) {
-  const { data: session } = useSession();
-  const [state, setState] = useState<{
-    token: string;
-    callId: string;
-    userId: string;
-    userName: string;
-  } | null>(null);
+  const { data: session, status } = useSession();
+  const [state, setState] = useState<JoinState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requiresPasscode, setRequiresPasscode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [passcodeInput, setPasscodeInput] = useState(passcode || "");
 
-  const joinMeeting = async (userId: string, currentPasscode?: string) => {
-    setLoading(true);
-    setError(null);
+  const joinMeeting = useCallback(
+    async (userId: string, currentPasscode?: string) => {
+      setLoading(true);
+      setError(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meetings/join`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${userId}`,
-      },
-      body: JSON.stringify({ meetingId, passcode: currentPasscode }),
-    });
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meetings/join`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userId}`,
+          },
+          body: JSON.stringify({ meetingId, passcode: currentPasscode }),
+        });
 
-    if (!res.ok) {
-      const message = await res.text();
-      if (res.status === 403) {
-        setRequiresPasscode(true);
-        setError("Invalid passcode. Please enter the correct meeting passcode.");
-      } else {
-        setError(message || "Failed to join meeting");
+        if (!res.ok) {
+          const message = await res.text();
+          if (res.status === 403) {
+            setRequiresPasscode(true);
+            setError("Invalid passcode. Please enter the correct meeting passcode.");
+          } else if (res.status === 404) {
+            setError("This meeting doesn't exist or has ended.");
+          } else {
+            setError(message || "Failed to join meeting.");
+          }
+          return;
+        }
+
+        const data = await res.json();
+        const user = session?.user as
+          | { name?: string | null; email?: string | null; image?: string | null }
+          | undefined;
+
+        setRequiresPasscode(false);
+        setState({
+          token: data.token,
+          callId: data.callId,
+          userId,
+          userName: user?.name || user?.email || "Guest",
+          userImage: user?.image ?? undefined,
+          meetingTitle: data.meeting?.title ?? "Meeting",
+        });
+      } catch {
+        setError(
+          "Cannot reach the meeting server. Please make sure the backend is running and try again."
+        );
+      } finally {
+        setLoading(false);
       }
+    },
+    [meetingId, session?.user]
+  );
+
+  useEffect(() => {
+    if (status === "loading") return;
+    const currentUserId = (session?.user as { id?: string } | undefined)?.id;
+    if (!currentUserId) {
       setLoading(false);
       return;
     }
-
-    const data = await res.json();
-    setRequiresPasscode(false);
-    setState({
-      token: data.token,
-      callId: data.callId,
-      userId,
-      userName: session?.user?.name || session?.user?.email || "Guest",
-    });
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    const currentUserId = (session?.user as { id?: string } | undefined)?.id;
-    if (!currentUserId) return;
+    if (state) return; // already joined
     void joinMeeting(currentUserId, passcode);
-  }, [meetingId, passcode, session?.user]);
+  }, [status, session?.user, passcode, joinMeeting, state]);
 
-  if (requiresPasscode) {
-    const currentUserId = (session?.user as { id?: string } | undefined)?.id;
+  const currentUserId = (session?.user as { id?: string } | undefined)?.id;
 
+  // Not authenticated
+  if (status !== "loading" && !currentUserId) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-zinc-950 p-4">
-        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-          <h2 className="text-xl font-semibold text-white mb-2">Enter Meeting Passcode</h2>
-          <p className="text-zinc-400 text-sm mb-4">This meeting is protected.</p>
-          <input
-            value={passcodeInput}
-            onChange={(event) => setPasscodeInput(event.target.value)}
-            placeholder="Passcode"
-            className="w-full h-11 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-white"
-          />
-          {error ? <p className="text-red-400 text-sm mt-3">{error}</p> : null}
-          <button
-            onClick={() => {
-              if (!currentUserId) return;
-              void joinMeeting(currentUserId, passcodeInput);
-            }}
-            className="mt-4 w-full h-11 rounded-lg bg-primary text-white hover:bg-primary/90"
-          >
-            Join Meeting
-          </button>
-        </div>
-      </div>
+      <MeetingShell>
+        <Lock className="mb-4 h-10 w-10 text-zinc-500" />
+        <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
+        <p className="mb-6 max-w-sm text-zinc-400">
+          You need to be signed in to join this meeting.
+        </p>
+        <Link
+          href="/login"
+          className="rounded-xl bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary/90"
+        >
+          Sign in
+        </Link>
+      </MeetingShell>
     );
   }
 
-  if (error) {
-    return <div className="p-8 text-red-400">{error}</div>;
+  // Passcode prompt
+  if (requiresPasscode && !state) {
+    return (
+      <MeetingShell>
+        <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-left">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-lg bg-zinc-800 p-2">
+              <Lock className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Enter passcode</h2>
+              <p className="text-sm text-zinc-400">This meeting is protected.</p>
+            </div>
+          </div>
+          <input
+            value={passcodeInput}
+            onChange={(event) => setPasscodeInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && currentUserId) {
+                void joinMeeting(currentUserId, passcodeInput);
+              }
+            }}
+            placeholder="Passcode"
+            autoFocus
+            className="h-11 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 font-mono uppercase text-white focus:border-primary focus:outline-none"
+          />
+          {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
+          <button
+            onClick={() => currentUserId && joinMeeting(currentUserId, passcodeInput)}
+            disabled={loading || !passcodeInput.trim()}
+            className="mt-4 flex h-11 w-full items-center justify-center rounded-lg bg-primary font-medium text-white hover:bg-primary/90 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Join Meeting"}
+          </button>
+        </div>
+      </MeetingShell>
+    );
   }
 
-  if (loading || !state) return <div>Joining...</div>;
+  // Error
+  if (error && !state) {
+    return (
+      <MeetingShell>
+        <AlertTriangle className="mb-4 h-10 w-10 text-amber-500" />
+        <h2 className="mb-2 text-xl font-semibold">Unable to join</h2>
+        <p className="mb-6 max-w-sm text-zinc-400">{error}</p>
+        <div className="flex gap-3">
+          <Link
+            href="/meeting"
+            className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-5 py-2.5 font-medium text-zinc-200 hover:bg-zinc-800"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Link>
+          {currentUserId ? (
+            <button
+              onClick={() => joinMeeting(currentUserId, passcodeInput)}
+              className="rounded-xl bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary/90"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
+      </MeetingShell>
+    );
+  }
+
+  // Connecting
+  if (loading || !state) {
+    return (
+      <MeetingShell>
+        <Loader2 className="mb-4 h-8 w-8 animate-spin text-primary" />
+        <p className="text-zinc-400">Preparing your meeting...</p>
+      </MeetingShell>
+    );
+  }
 
   return (
     <StreamProvider
       token={state.token}
-      user={{ id: state.userId, name: state.userName }}
+      user={{ id: state.userId, name: state.userName, image: state.userImage }}
     >
-      <CallUI callId={state.callId} />
+      <CallExperience
+        callId={state.callId}
+        meetingId={meetingId}
+        meetingTitle={state.meetingTitle}
+        userId={state.userId}
+        userName={state.userName}
+      />
     </StreamProvider>
   );
 }
 
-function CallUI({ callId }: { callId: string }) {
+function MeetingShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-screen w-screen flex-col items-center justify-center bg-zinc-950 px-4 text-center text-white">
+      {children}
+    </div>
+  );
+}
+
+function CallExperience({
+  callId,
+  meetingId,
+  meetingTitle,
+  userId,
+  userName,
+}: {
+  callId: string;
+  meetingId: string;
+  meetingTitle: string;
+  userId: string;
+  userName: string;
+}) {
   const client = useStreamVideoClient();
   const [call, setCall] = useState<Call | null>(null);
-  const [joined, setJoined] = useState(false);
 
   useEffect(() => {
-    if (!client || !callId) return;
-
+    if (!client) return;
     const newCall = client.call("default", callId);
     setCall(newCall);
 
-    newCall
-      .join({ create: true })
-      .then(() => setJoined(true))
-      .catch((err) => console.error("Failed to join:", err));
-
     return () => {
-      newCall.leave().catch(console.error);
+      // Only leave a call that was actually joined; leaving an idle call throws.
+      const cs = newCall.state.callingState;
+      if (cs === CallingState.JOINED || cs === CallingState.JOINING) {
+        newCall.leave().catch(() => undefined);
+      }
     };
   }, [client, callId]);
 
-  if (!call || !joined) {
+  if (!call) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        Joining call...
-      </div>
+      <MeetingShell>
+        <Loader2 className="mb-4 h-8 w-8 animate-spin text-primary" />
+        <p className="text-zinc-400">Connecting to call...</p>
+      </MeetingShell>
     );
   }
 
   return (
     <StreamCall call={call}>
-      <StreamTheme>
-        <div className="h-screen w-screen flex flex-col">
-          <div className="flex-1">
-            <SpeakerLayout />
-          </div>
-          <div className="p-4">
-            <CallControls />
-          </div>
-        </div>
+      <StreamTheme className="meetflow-stream-theme">
+        <RoomGate
+          call={call}
+          meetingId={meetingId}
+          meetingTitle={meetingTitle}
+          userId={userId}
+          userName={userName}
+        />
       </StreamTheme>
     </StreamCall>
+  );
+}
+
+function RoomGate({
+  call,
+  meetingId,
+  meetingTitle,
+  userId,
+  userName,
+}: {
+  call: Call;
+  meetingId: string;
+  meetingTitle: string;
+  userId: string;
+  userName: string;
+}) {
+  const router = useRouter();
+  const { useCallCallingState } = useCallStateHooks();
+  const callingState = useCallCallingState();
+
+  useEffect(() => {
+    if (callingState === CallingState.LEFT) {
+      router.push("/meeting");
+    }
+  }, [callingState, router]);
+
+  if (callingState === CallingState.JOINED) {
+    return (
+      <MeetingRoom
+        meetingId={meetingId}
+        meetingTitle={meetingTitle}
+        userId={userId}
+        onLeave={() => call.leave().catch(() => undefined)}
+      />
+    );
+  }
+
+  if (callingState === CallingState.JOINING) {
+    return (
+      <MeetingShell>
+        <Loader2 className="mb-4 h-8 w-8 animate-spin text-primary" />
+        <p className="text-zinc-400">Joining the call...</p>
+      </MeetingShell>
+    );
+  }
+
+  return (
+    <Lobby
+      call={call}
+      meetingTitle={meetingTitle}
+      userName={userName}
+      onJoin={() => call.join({ create: true })}
+    />
   );
 }
