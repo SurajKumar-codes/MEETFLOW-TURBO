@@ -9,7 +9,6 @@
     "dev": "npm run build && npm run start"
   },
   "devDependencies": {
-    "@repo/db": "workspace:*",
     "@repo/typescript-config": "workspace:*"
   },
   "keywords": [],
@@ -17,6 +16,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@repo/db": "workspace:*",
     "@stream-io/node-sdk": "^0.7.32",
     "@stream-io/video-react-sdk": "^1.30.0",
     "@types/cors": "^2.8.19",

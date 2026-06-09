@@ -27,7 +27,7 @@ services:
     rootDir: .
     buildCommand: >-
       corepack enable &&
-      pnpm install --frozen-lockfile &&
+      pnpm install --frozen-lockfile --prod=false &&
       pnpm --filter @repo/db exec prisma generate &&
       pnpm --filter @repo/db exec prisma migrate deploy &&
       pnpm --filter @repo/http-backend build
@@ -66,7 +66,7 @@ services:
     rootDir: .
     buildCommand: >-
       corepack enable &&
-      pnpm install --frozen-lockfile &&
+      pnpm install --frozen-lockfile --prod=false &&
       pnpm --filter @repo/db exec prisma generate &&
       pnpm --filter web build
     startCommand: pnpm --filter web start
