@@ -36,9 +36,16 @@ app.use(
 
 app.use(express.json());
 
+// Health check (used by Render and uptime probes)
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.use("/meetings", meetingRoutes);
 
 
-app.listen(3001, () => {
-  console.log("Speak, I am Listening on port 3001");
+const PORT = Number(process.env.PORT) || 3001;
+
+app.listen(PORT, () => {
+  console.log(`Speak, I am Listening on port ${PORT}`);
 })

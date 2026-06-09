@@ -32,6 +32,9 @@ importers:
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
+      '@types/jsonwebtoken':
+        specifier: ^9.0.7
+        version: 9.0.10
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -41,6 +44,9 @@ importers:
       express:
         specifier: ^5.2.1
         version: 5.2.1
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.3
     devDependencies:
       '@repo/db':
         specifier: workspace:*
@@ -96,6 +102,9 @@ importers:
       dialog:
         specifier: ^0.3.1
         version: 0.3.1
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.3
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.0)
@@ -142,6 +151,9 @@ importers:
       '@types/bcrypt':
         specifier: ^6.0.0
         version: 6.0.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.7
+        version: 9.0.10
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.3
@@ -166,9 +178,6 @@ importers:
       '@prisma/client':
         specifier: '6'
         version: 6.19.1(prisma@6.19.1(typescript@5.9.2))(typescript@5.9.2)
-      node:
-        specifier: link:/types
-        version: link:../../../../types
       prisma:
         specifier: '6'
         version: 6.19.1(typescript@5.9.2)

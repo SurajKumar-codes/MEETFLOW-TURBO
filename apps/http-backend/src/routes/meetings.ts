@@ -136,9 +136,15 @@ router.get("/", requireUser, async (req, res) => {
 /**
  * GET ALL MEETINGS HOSTED BY USER
  */
-router.get("/user/:id", async (req, res) => {
+router.get("/user/:id", requireUser, async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as typeof req & AuthenticatedRequest).userId;
+
+    // Only let a user list their own hosted meetings.
+    if (id !== userId) {
+      return res.status(403).json({ message: "Access denied" });
+    }
 
     const meetings = await prisma.meeting.findMany({
       where: { hostId: id },

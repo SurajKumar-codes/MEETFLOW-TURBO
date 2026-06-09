@@ -55,7 +55,7 @@ export default function SchedulePage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiRequest<Meeting[]>("/meetings", userId);
+      const result = await apiRequest<Meeting[]>("/meetings");
       setMeetings(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load meetings");

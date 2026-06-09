@@ -25,8 +25,7 @@ export function MeetingChat({ meetingId, userId }: MeetingChatProps) {
     const load = async () => {
       try {
         const result = await apiRequest<MeetingMessage[]>(
-          `/meetings/${meetingId}/messages`,
-          userId
+          `/meetings/${meetingId}/messages`
         );
         if (mounted) setMessages(result);
       } catch (err) {
@@ -57,7 +56,6 @@ export function MeetingChat({ meetingId, userId }: MeetingChatProps) {
     try {
       const created = await apiRequest<MeetingMessage>(
         `/meetings/${meetingId}/messages`,
-        userId,
         { method: "POST", body: JSON.stringify({ content }) }
       );
       setMessages((prev) => [...prev, created]);

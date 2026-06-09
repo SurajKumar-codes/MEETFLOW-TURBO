@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { StreamProvider } from "@/lib/streamClient";
+import { authHeaders } from "@/lib/api";
 import {
   Call,
   CallingState,
@@ -51,7 +52,7 @@ export default function MeetingClient({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${userId}`,
+            ...(await authHeaders()),
           },
           body: JSON.stringify({ meetingId, passcode: currentPasscode }),
         });

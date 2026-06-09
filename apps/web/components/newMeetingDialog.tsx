@@ -59,7 +59,7 @@ export function NewMeetingDialog({ trigger, onCreated }: NewMeetingDialogProps) 
     const startsAt = new Date(`${formData.date}T${formData.startTime}:00`).toISOString();
     const endsAt = new Date(`${formData.date}T${formData.endTime}:00`).toISOString();
 
-    apiRequest<Meeting>("/meetings/create", userId, {
+    apiRequest<Meeting>("/meetings/create", {
       method: "POST",
       body: JSON.stringify({
         title: formData.title,

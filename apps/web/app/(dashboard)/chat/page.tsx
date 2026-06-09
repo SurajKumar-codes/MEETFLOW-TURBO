@@ -26,7 +26,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!userId) return;
 
-    apiRequest<Meeting[]>("/meetings", userId)
+    apiRequest<Meeting[]>("/meetings")
       .then((result) => {
         setMeetings(result);
         const firstMeetingId = result[0]?.id;
@@ -48,8 +48,7 @@ export default function ChatPage() {
     const loadMessages = async () => {
       try {
         const result = await apiRequest<MeetingMessage[]>(
-          `/meetings/${selectedMeetingId}/messages`,
-          userId
+          `/meetings/${selectedMeetingId}/messages`
         );
 
         if (mounted) {
@@ -80,7 +79,6 @@ export default function ChatPage() {
     try {
       const created = await apiRequest<MeetingMessage>(
         `/meetings/${selectedMeetingId}/messages`,
-        userId,
         {
           method: "POST",
           body: JSON.stringify({ content: newMessage.trim() }),
